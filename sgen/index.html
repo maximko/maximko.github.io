@@ -1,0 +1,88 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>SGEN</title>
+  <meta name="description" content="SGEN">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+
+<body>
+  <nav class="navbar navbar-light bg-light">
+    <span class="navbar-brand mb-0 h1">Empty mp3 with tags generator</span>
+  </nav>
+  <div class="container">
+    <form>
+      <div class="form-group row">
+        <label for="title" class="col-sm-2 col-form-label">Track Title</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="title" placeholder="title">
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="artist" class="col-sm-2 col-form-label">Track Artist(s)</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="artist" placeholder="artists">
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="album" class="col-sm-2 col-form-label">Track Album</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="album" placeholder="album">
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="duration" class="col-sm-2 col-form-label">Track duration</label>
+        <div class="col-sm-6">
+          <input type="text" class="form-control" id="duration" placeholder="mm:ss">
+        </div>
+        <div class="col-sm-4">
+          <button type="button" id="gen" class="btn btn-primary" onclick="generate()">Generate file</button>
+        </div>
+
+      </div>
+    </form>
+  </div>
+  <script src='lame.min.js'></script>
+  <script src='FileSaver.min.js'></script>
+  <script src='browser-id3-writer.js'></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+    integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+    crossorigin="anonymous"></script>
+  <script>
+    function generate() {
+      var duration = Date.parse('1970-01-01T00:' + document.getElementById("duration").value + 'Z') / 1000;
+      //console.log(duration);
+      if (isNaN(duration)) { alert('Invalid duration'); return }
+      var mp3Data = [];
+      var mp3encoder = new lamejs.Mp3Encoder(1, 44100, 32); //mono 44.1khz encode to 128kbps
+      var samples = new Int16Array(44100 * duration);
+      var mp3Tmp = mp3encoder.encodeBuffer(samples); //encode mp3
+
+      //Push encode buffer to mp3Data variable
+      mp3Data.push(mp3Tmp);
+
+      // Get end part of mp3
+      mp3Tmp = mp3encoder.flush();
+
+      // Write last data to the output data, too
+      // mp3Data contains now the complete mp3Data
+      mp3Data.push(mp3Tmp);
+
+      const writer = new ID3Writer(mp3Data[0]);
+      writer.setFrame('TIT2', document.getElementById('title').value)
+        .setFrame('TPE1', [document.getElementById('artist').value])
+        .setFrame('TALB', document.getElementById('album').value);
+      writer.addTag();
+
+      //var blob = new Blob(writer, { type: "audio/mpeg" });
+      saveAs(writer.getBlob(), document.getElementById('artist').value + ' - ' + document.getElementById('title').value + '.mp3');
+
+    }
+  </script>
+</body>
+
+</html>
